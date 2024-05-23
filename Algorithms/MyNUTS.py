@@ -59,7 +59,6 @@ class MyNUTS(MC_Algorithm):
                         q = new_q.copy()
             
             j +=1
-        
         if (q_old == q).all(): rj = 1
         else: rj = 0
         return q, rj
@@ -68,15 +67,12 @@ class MyNUTS(MC_Algorithm):
 
 
     def check(self,q ,p, n, picked_q, E_new):
-        
         n2 = np.exp(-E_new + self.Hamiltonian.E_old)
         log_sum_exp = -self.Hamiltonian.E_old + np.log(  n + n2 )
-        
         if math.isnan(E_new):
             return picked_q, n+n2
         else:
             if np.exp(-E_new - log_sum_exp) > self.rng.uniform():
-                
                 picked_q = q.copy()
         
         return picked_q, n+n2
@@ -98,7 +94,6 @@ class MyNUTS(MC_Algorithm):
             else:
                     q_l, p_l, n, picked_q, stop = self.step_direction(self.dt, q_l, p_l, q_r, p_r, n, picked_q)
             i+=1
-            
         if v==1:
              return q_r, p_r, picked_q, n, stop
         else:
@@ -109,17 +104,15 @@ class MyNUTS(MC_Algorithm):
     def step_direction(self, dt, q, p, q_2, p_2,n, picked_q):  
         q, p = self.Hamiltonian.integrator(q.copy(), p.copy(), dt, self.model)
         E_new  = self.Hamiltonian.Energy(q, p, self.model)
-        
         stop = self.Hamiltonian.inversion(q, q_2, p, p_2) * int( ( E_new - self.Hamiltonian.E_old)/self.Hamiltonian.E_old  <= self.err)
-        
+
         if math.isnan(E_new): 
+            
             stop = 0
         if stop:
             q, p = self.model.reflection(q, p)
                 
             picked_q, n = self.check(q, p, n, picked_q, E_new)
-        
-        
         return q, p, n, picked_q, stop 
   
     

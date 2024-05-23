@@ -17,7 +17,7 @@ def extract_midpoints(bounds, N, rng):
     for i in range(N):
         for b in bounds:
             start_q.append(        rng.uniform(  b[0] , b[1]  )         )
-        
+    
     return start_q
 
 def what_u_get(m, t, signal, noise, Nsources):
@@ -34,7 +34,7 @@ def what_u_get(m, t, signal, noise, Nsources):
     
 
 rng = np.random.default_rng(1234)
-Nsources = 5
+Nsources = 20
 bounds = [(2. ,7.), (1., 2.), (0, 2*np.pi)]
 start_q = np.array(extract_midpoints(bounds, Nsources, rng))
 time = [0,15]
@@ -49,20 +49,22 @@ M = CompactBinieriesSignal( signal, time, Nsources, bounds = bounds*Nsources)
 
 
 
-H1 = H(50*np.ones(Nsources*3))
-m, rj = MyNUTS(M, H1, dt = 0.0005, rng=rng).run(10000, start_q)
+
+H1 = H(1*np.ones(Nsources*3))
+
+m, rj = MyNUTS(M, H1, dt = 0.0001, rng=rng).run(15000, start_q)
+what_u_get(m, t, signal, noise, Nsources)
+
+H2 = PB_H(50., 450., 100.)
+m, rj = MyNUTS(M, H2, dt = 0.0001, rng=rng).run(15000, start_q)
 what_u_get(m, t, signal, noise, Nsources)
 
 
-m, rj = NUTS(M, H1, dt = 0.0005 , rng=rng).run(10000, start_q)
+
+m, rj = NUTS(M, H1, dt = 0.0001 , rng=rng).run(15000, start_q)
 what_u_get(m, t, signal, noise, Nsources)
 
 
-m, rj = MALA(M, dt = 0.000001, rng=rng).run(10000, start_q)
+m, rj = MALA(M, dt = 0.000001, rng=rng).run(15000, start_q)
 what_u_get(m, t, signal, noise, Nsources)
 
-
-
-H2 = PB_H(5.5, 20., 1000.)
-m, rj = MyNUTS(M, H2, dt = 0.0005, rng=rng).run(10000, start_q)
-what_u_get(m, t, signal, noise, Nsources)

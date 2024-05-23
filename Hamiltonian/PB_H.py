@@ -25,7 +25,7 @@ class PB_H():
         
         self.int_p = p
         
-        self.E_old = U + .5*p.T @ ((1 / M) * p) + .5*np.log(np.prod(M))
+        self.E_old = U + .5*p.T @ ((1 / M) * p) -len(q)*np.log(U/self.fraction+1)
         return p
         
 
@@ -42,7 +42,7 @@ class PB_H():
         p = third_step_dq( q, p, dt, model, self.B, U, self.fraction)
         
         M = self.B/(U/self.fraction + 1)
-        self.E = U + .5*p.T @ np.diag( 1 / M ) @ p + .5*np.log(np.prod(M))
+        self.E = U + .5*p.T @ np.diag( 1 / M ) @ p  -len(q)*np.log(U/self.fraction+1)
         self.int_p += p
         return q, p
     '''
@@ -55,7 +55,7 @@ class PB_H():
 def dQVDET(q, model, U, B, f):
     
     grad_V = model.gradient(q)
-    grad_det = -len(q) * grad_V/(U/f + 1) 
+    grad_det = -len(q) * (grad_V/f)/(U/f + 1) 
         
     return grad_V + grad_det, grad_V
 
