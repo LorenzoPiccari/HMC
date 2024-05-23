@@ -35,28 +35,26 @@ def what_u_get(m, t, signal, noise, Nsources):
 
 rng = np.random.default_rng(1234)
 Nsources = 5
-bounds = [(2. ,7.), (0., 10.), (.1, 1.), (.75, 4.), (0, 2*np.pi)]
+bounds = [(2. ,7.), (1., 2.), (0, 2*np.pi)]
 start_q = np.array(extract_midpoints(bounds, Nsources, rng))
+time = [0,15]
 
-t, signal, real_q, noise = generate_data( bounds, Nsources, sampling_frequency=16, sigma_noise=0.8, rng = rng)
+t, signal, real_q, noise = generate_data( bounds,time, Nsources, sampling_frequency=16, sigma_noise=0.8, rng = rng)
 
 plt.plot(t, signal + noise)
 plt.show()
-bounds = [(2. ,7.), (0., 10.), (.1, 1.3), (.75, 4.), (0, 2*np.pi)]
 
-M = CompactBinieriesSignal( signal, Nsources, bounds = bounds*Nsources)
+M = CompactBinieriesSignal( signal, time, Nsources, bounds = bounds*Nsources)
 
-H2 = PB_H(.5, 1., 10.)
-m, rj = MyNUTS(M, H2, dt = 0.0003, rng=rng).run(10000, start_q)
+
+
+
+H1 = H(50*np.ones(Nsources*3))
+m, rj = MyNUTS(M, H1, dt = 0.0005, rng=rng).run(10000, start_q)
 what_u_get(m, t, signal, noise, Nsources)
 
 
-H1 = H(np.ones(Nsources*5))
-m, rj = MyNUTS(M, H1, dt = 0.0003, rng=rng).run(10000, start_q)
-what_u_get(m, t, signal, noise, Nsources)
-
-
-m, rj = NUTS(M, H1, dt = 0.0003, rng=rng).run(10000, start_q)
+m, rj = NUTS(M, H1, dt = 0.0005 , rng=rng).run(10000, start_q)
 what_u_get(m, t, signal, noise, Nsources)
 
 
@@ -65,4 +63,6 @@ what_u_get(m, t, signal, noise, Nsources)
 
 
 
-
+H2 = PB_H(5.5, 20., 1000.)
+m, rj = MyNUTS(M, H2, dt = 0.0005, rng=rng).run(10000, start_q)
+what_u_get(m, t, signal, noise, Nsources)

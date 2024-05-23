@@ -15,7 +15,6 @@ class PB_H():
         return np.random.uniform(self.mass, self.mass + self.jump_max, dim)
     
     def momentum_update(self, q, model, rng): 
-        
         U = model.distribution(q)
         self.B = self.jump(len(q))
         M = self.B/(U/self.fraction + 1)

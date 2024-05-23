@@ -61,3 +61,28 @@ class BHsSignal(Model):
         const = res/(self.sigma_noise**2)
         
         return (-gradient_bursts(q, self.t, self.Nsources, const))
+    
+    def reflection(self, q, p):
+        diff = np.diff(q[1::5])
+        refl = []
+        
+        for i in range(len(diff)):
+            if diff[i] < .05:
+                refl.append((1 + i*5, 1 + (i+1)*5))
+                
+        for f in refl:
+            p[f[0]] = -p[f[0]]
+            p[f[1]] = -p[f[1]]
+            
+        for i in range(self.Nsources):
+            if q[5 * i + 4] < 0:
+                q[5 * i + 4] += 2*np.pi
+            if q[5 * i + 4] > 2*np.pi:
+                q[5 * i + 4] -= 2*np.pi
+                
+            if q[5* i + 2] > self.bounds[5* i + 2][ 1]:
+                p[5*i +2] = -p[5*i +2]
+        return q, p
+    
+    
+    

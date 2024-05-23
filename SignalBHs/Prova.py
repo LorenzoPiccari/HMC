@@ -34,7 +34,7 @@ def what_u_get(m, t, signal, noise, Nsources):
     
 
 rng = np.random.default_rng(1234)
-Nsources = 10
+Nsources = 3
 bounds = [(2. ,7.), (0., 10.), (.1, 1.), (.75, 4.), (0, 2*np.pi)]
 start_q = np.array(extract_midpoints(bounds, Nsources, rng))
 
