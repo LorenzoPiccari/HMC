@@ -24,6 +24,7 @@ class NUTS(MC_Algorithm):
 
     
     def run(self, iteration, start_q = None):
+        self.j = 0
         print("\nDt:", self.dt)
         return super().run(iteration,start_q)
 
@@ -57,7 +58,8 @@ class NUTS(MC_Algorithm):
                     q = picked_q.copy()
             
             j +=1
-            
+        
+        self.j += j-1
         if (q_old == q).all(): rj = 1
         else: rj = 0
         return q, rj

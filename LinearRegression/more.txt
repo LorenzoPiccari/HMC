@@ -1,0 +1,13 @@
+
+def mass_matrix(dim, rng):
+    return np.ones(dim)*1.5
+H1 = H(2.5*np.eye(num_points+2))
+H2 = PB_H(mass_matrix, 1000)
+
+
+nuts =  NUTS(M, H1, dt = 0.005 , rng=rng)
+mynuts = MyNUTS(M, H1, dt = 0.005, rng=rng)
+pb = MyNUTS(M, H2, dt = 0.005, rng=rng)
+metropolis = metropolis(M, .1, rng = rng)
+mala = MALA(M, dt = 0.005, rng=rng)
+hmc = HMC(M, H1, L = 50, dt = 0.005, rng = rng)

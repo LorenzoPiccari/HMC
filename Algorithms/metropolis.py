@@ -5,8 +5,8 @@ import numpy as np
 
 class metropolis(MC_Algorithm):
     
-    def __init__(self, user_model, extra_p = .1):
-        super().__init__(user_model)
+    def __init__(self, user_model, extra_p = .1, rng = np.random):
+        super().__init__(user_model, rng)
         self.eps = extra_p
     
     def alg_name(self):
@@ -14,7 +14,7 @@ class metropolis(MC_Algorithm):
 
         
     def Kernel(self, q):
-        new_q = np.random.uniform(q - self.eps, q + self.eps, len(q))
+        new_q = self.rng.uniform(q - self.eps, q + self.eps, len(q))
 
         alpha = self.model.distribution(new_q) - self.model.distribution(q) 
     

@@ -50,62 +50,17 @@ def mass_matrix(dim, rng):
     
 H2 = PB_H(mass_matrix,100)
 
-
-
-
-
-
-
-
-
-
 start_q = np.array([.2,2.])
 
 nuts =  NUTS(M, H1, dt = 0.001 , rng=rng)
 mynuts = MyNUTS(M, H1, dt = 0.002, rng=rng)
-pb = MyNUTS(M, H2, dt = 0.001, rng=rng)
+pb = MyNUTS(M, H2, dt = 0.002, rng=rng)
 metropolis = metropolis(M, .1, rng = rng)
-mala = MALA(M, dt = 0.001, rng=rng)
+mala = MALA(M, dt = 0.01, rng=rng)
 hmc = HMC(M, H1, L = 20, dt = 0.002, rng = rng)
 
-
-
-
-H2.momentum_update(np.array([1,1.5]), M, rng)
-m =np.zeros((40, 2))
-m[0] = np.array([1,1.5])
-p = np.array([.1,.05])
-for i in range(1, 40):
-    m[i], p = H2.integrator(m[i-1], p, 0.001, M)
-
-xline = np.linspace(np.min(m[:,0]),np.max(m[:,0]),1000)    
-yline = np.linspace(np.min(m[:,1]),np.max(m[:,1]),1000)   
-
-X,Y = np.meshgrid(xline, yline)
-zline = np.array([np.exp( -M.distribution(np.array([X[i,j],Y[i,j]])) ) for i in range(len(xline)) for j in range(len(yline))])
-
-plt.style.use('seaborn-whitegrid')
-plt.contour(X, Y, zline.reshape(len(xline),len(yline)), cmap=plt.cm.Greys_r)   
-
-plt.grid(None)
-plt.plot(m[:,0], m[:,1], c = 'red', marker = '.', alpha=0.5)
-plt.title(pb.alg_name())
-plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
 algs = [metropolis, mala, hmc, nuts, mynuts, pb]
-iteration = 12000
+iteration = 5000
 '''
 for a in algs:
     print(a.alg_name())
@@ -125,13 +80,5 @@ for a in algs:
     plt.title(a.alg_name())
     plt.show()
 '''
-#all_m = compare(algs, iteration, start_q, 2000, 100)
-all_m = [np.load(a.alg_name()+".npy") for a in algs]
-
-for m, a in zip(all_m, algs):
-    sys.corner_plot(m,np.array([1,1]))
-
-inf= np.load("info.npy")
-for m, a in zip(all_m, algs):
-    print(a.alg_name(), np.mean(m, axis=0), sys.var_mean_real(m, np.mean(m, axis=0))[0])
-print(inf)
+m,rj = nuts.run(iteration, start_q)
+sys.corner_plot(m,np.array([1,1]))

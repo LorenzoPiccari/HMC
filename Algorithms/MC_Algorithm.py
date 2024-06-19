@@ -37,11 +37,26 @@ class MC_Algorithm():
             
             print("\n Rejected points: ", rejected)    
             return sample, rejected
+    
+    def simple_run(self, iteration, start_q):
         
+            sample = np.zeros((iteration, self.model.dim) )
+            
+            rejected = 0
+            sample[-1] = start_q
+            
+            for i in tqdm(range(iteration)):
+                
+                sample[i], rj = self.Kernel(sample[i-1,:])
+                
+                rejected+= rj
+            
+            return sample, rejected    
+    
     def new_point(self):
             generate_random_numbers = lambda pair: self.rng.uniform(pair[0], pair[1])
             x = list(map(generate_random_numbers, self.model.bounds))
-            return np.array([x])
+            return np.array(x)
     
     def acceptance(self, q, new_q, alpha): #alpha definito come log(denominatore)-log(numeratore)
             

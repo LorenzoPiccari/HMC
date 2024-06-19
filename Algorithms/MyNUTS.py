@@ -20,15 +20,70 @@ class MyNUTS(MC_Algorithm):
         
         
     def alg_name(self):
-        return "MyNUTS"
+        if isinstance(self.Hamiltonian , H):
+            return "MyNUTS"
+        else:
+            return "PB"
 
     
     def run(self, iteration, start_q = None):
-        
         print("\nDt:", self.dt)
         return super().run(iteration,start_q)
-
+    
+    def run_BMFI(self, iteration, start_q = None):
+        
+            sample, rejected = self.prep_run(start_q, iteration)
             
+            self.E = np.zeros(iteration)
+            for i in range(iteration):
+                
+                sample[i], rj = self.Kernel_BMFI(sample[i-1,:], i)
+                
+                rejected+= rj
+            
+            num = 0
+            den = 0
+            mean = np.mean(self.E)
+            for j in range(iteration-1):
+                num += (self.E[j+1]- self.E[j])**2
+                den += (self.E[j]-mean)**2
+            den += (self.E[-1]-mean)**2
+            BMFI = num/den    
+            return sample, rejected, BMFI
+        
+    def Kernel_BMFI(self, q, i): # extra_p = time_step, err
+        
+        q_old = q.copy()
+        p = self.Hamiltonian.momentum_update(q, self.model, self.rng)
+        self.E[i] = self.Hamiltonian.E_old
+        q_l = q.copy()
+        q_r = q.copy()
+        p_l = p.copy()
+        p_r = p.copy()
+        j = 1
+        n = 1
+        stop = 1
+        while stop==1:
+            v = int(self.rng.uniform()<0.5)*2-1
+
+            if v == 1:
+                q_r, p_r, new_q, n2, stop2 = self.build_tree(q_r, p_r, q_l, p_l, q.copy(), v, j)
+            else:
+                q_l, p_l, new_q, n2, stop2 = self.build_tree(q_r, p_r, q_l, p_l, q.copy(), v, j)
+
+            log_sum_exp = - self.Hamiltonian.E_old + np.log(  n  )
+            stop = stop2 * self.Hamiltonian.inversion(q_r, q_l, p_r, p_l)
+            
+            if n2 > 0:
+                n += n2
+                log_sum_exp1 = -self.Hamiltonian.E_old + np.log(  n2  )
+                if self.rng.uniform() < np.exp(log_sum_exp1 - log_sum_exp):
+                        q = new_q.copy()
+            
+            j +=1
+        if (q_old == q).all(): rj = 1
+        else: rj = 0
+        return q, rj        
     def Kernel(self, q): # extra_p = time_step, err
         
         q_old = q.copy()
@@ -41,20 +96,19 @@ class MyNUTS(MC_Algorithm):
         n = 1
         stop = 1
         while stop==1:
-            
             v = int(self.rng.uniform()<0.5)*2-1
 
             if v == 1:
                 q_r, p_r, new_q, n2, stop2 = self.build_tree(q_r, p_r, q_l, p_l, q.copy(), v, j)
             else:
                 q_l, p_l, new_q, n2, stop2 = self.build_tree(q_r, p_r, q_l, p_l, q.copy(), v, j)
-            
-            log_sum_exp = - self.Hamiltonian.E_old + np.log(  n + n2 )
+
+            log_sum_exp = - self.Hamiltonian.E_old + np.log(  n  )
             stop = stop2 * self.Hamiltonian.inversion(q_r, q_l, p_r, p_l)
             
             if n2 > 0:
                 n += n2
-                log_sum_exp1 = -self.Hamiltonian.E_old + np.log(  n2 )
+                log_sum_exp1 = -self.Hamiltonian.E_old + np.log(  n2  )
                 if self.rng.uniform() < np.exp(log_sum_exp1 - log_sum_exp):
                         q = new_q.copy()
             
@@ -67,15 +121,17 @@ class MyNUTS(MC_Algorithm):
 
 
     def check(self,q ,p, n, picked_q, E_new):
-        n2 = np.exp(-E_new + self.Hamiltonian.E_old)
-        log_sum_exp = -self.Hamiltonian.E_old + np.log(  n + n2 )
         if math.isnan(E_new):
-            return picked_q, n+n2
+            return picked_q, n
+        n2 = np.exp(-E_new + self.Hamiltonian.E_old)
+        if n == 0:
+            return q, n2
         else:
+            log_sum_exp = -self.Hamiltonian.E_old + np.log(  n  )
             if np.exp(-E_new - log_sum_exp) > self.rng.uniform():
-                picked_q = q.copy()
-        
-        return picked_q, n+n2
+                    picked_q = q.copy()
+            
+            return picked_q, n+n2
         
         
 
@@ -86,7 +142,6 @@ class MyNUTS(MC_Algorithm):
         n = 0 
         
         while i < 2**(j-1) and stop == 1:
-            
             self.dt = v*np.abs(self.dt)
             
             if v == 1:

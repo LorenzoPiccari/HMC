@@ -1,22 +1,26 @@
 
 import numpy as np
+from scipy.stats import gamma
+
+def log_normal_mass(dim, rng):
+    #return rng.lognormal(self.par1, self.par2, size=dim)
+    pass
 
 class PB_H():
-    def __init__(self, jump_max, mass = None, fraction = 1):
-        if mass is None:
-            self.mass = 1.
-        else:
-            self.mass = mass
-        self.jump_max = jump_max
+    def __init__(self, mass_matrix = None, fraction = 1):
+        if mass_matrix is None:
+            self.mass_matrix = self.base_mass_matrix
+        else: self.mass_matrix = mass_matrix
         self.fraction = fraction
         
         
-    def jump(self, dim):
-        return np.random.uniform(self.mass, self.mass + self.jump_max, dim)
+    def base_mass_matrix(self, dim, rng):
+        return np.ones(dim)
     
     def momentum_update(self, q, model, rng): 
         U = model.distribution(q)
-        self.B = self.jump(len(q))
+        self.B = self.mass_matrix(len(q), rng)
+            
         M = self.B/(U/self.fraction + 1)
 
         S =  np.eye(len(q)) * M
@@ -25,7 +29,7 @@ class PB_H():
         
         self.int_p = p
         
-        self.E_old = U + .5*p.T @ ((1 / M) * p) -len(q)*np.log(U/self.fraction+1)
+        self.E_old = U + .5*p.T @ (p/M) -len(q)*np.log(U/self.fraction+1)
         return p
         
 
@@ -42,7 +46,7 @@ class PB_H():
         p = third_step_dq( q, p, dt, model, self.B, U, self.fraction)
         
         M = self.B/(U/self.fraction + 1)
-        self.E = U + .5*p.T @ np.diag( 1 / M ) @ p  -len(q)*np.log(U/self.fraction+1)
+        self.E = U + .5*p.T @ (p/M)  -len(q)*np.log(U/self.fraction+1)
         self.int_p += p
         return q, p
     '''
@@ -63,7 +67,7 @@ def dQVDET(q, model, U, B, f):
 
 def dQT(q, p, model, grad_V, U, B, f):
     
-    grad_T = -.5 * (grad_V/f) * ((1/(U/f + 1))**2) * (p.T @ (B*p))
+    grad_T = .5 * (grad_V/f) * (p.T @ (p/B))
     
     return grad_T 
 

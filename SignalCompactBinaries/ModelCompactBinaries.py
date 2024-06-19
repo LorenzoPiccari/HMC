@@ -32,7 +32,7 @@ class CompactBinieriesSignal(Model):
         
         self.npoints = int(sampling_frequency*(time[1] - time[0]))
         self.t =  np.array([i/sampling_frequency for i in range(self.npoints)])
-        self.sigma_noise = sigma_noise
+        self.sigma_noise = sigma_noise 
         super().__init__(3*Nsources ,bounds)
         
         
@@ -44,8 +44,7 @@ class CompactBinieriesSignal(Model):
         
         signal = bursts(self.t, self.Nsources, q)
         res = self.sample - signal
-        return res @ res *.5/(self.sigma_noise**2) 
-        
+        return (res @ res *.5/(self.sigma_noise**2)) / self.npoints
         
     def gradient(self, q):
         signal = bursts(self.t, self.Nsources, q)
@@ -53,11 +52,12 @@ class CompactBinieriesSignal(Model):
         res = self.sample - signal
         const = res/(self.sigma_noise**2)
         
-        return -gradient_bursts(q, self.t, self.Nsources, const)
+        return -gradient_bursts(q, self.t, self.Nsources, const) / self.npoints
     
     
     def reflection(self, q, p):
-        '''diff = np.diff(q[1::3])
+        '''
+        diff = np.diff(q[1::3])
         refl = []
         
         for i in range(len(diff)):
@@ -67,7 +67,7 @@ class CompactBinieriesSignal(Model):
         for f in refl:
             p[f[0]] = -p[f[0]]
             p[f[1]] = -p[f[1]]
-            '''
+        '''            
         for i in range(self.Nsources):
             if q[3 * i + 2] < 0:
                 q[3 * i + 2] += 2*np.pi

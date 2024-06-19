@@ -1,11 +1,13 @@
 import numpy as np
 import corner
 import matplotlib.pyplot as plt
+from scipy import stats
+from scipy.stats import norm
 
 
-def corner_plot(matrix, true = None):
+def corner_plot(matrix, true = None, figure = None):
     if true is None:
-        corner.corner(matrix)
+        corner.corner(matrix, fig = figure)
         plt.show()
     else:
         value1 = true
@@ -73,6 +75,21 @@ def tau(array, mean, N, lag):
     s = auto_c(array, mean, N, lag)
     return np.sum(s[1:])/s[0]
 
+def plot_IAT(matrix, lag):
+    N = len(matrix[:,0])
+    mean = mean_sample(matrix)
+    for array, m in zip(matrix.T, mean):
+        c_k = auto_c(array, m, N, lag)
+
+        sum_c_k = np.zeros(len(c_k)-1)
+        sum_c_k[0] = c_k[1]
+        for i in range(0,len(sum_c_k)-1):
+            sum_c_k[i+1] = sum_c_k[i] + c_k[i+1]
+        plt.plot(np.arange(len(c_k)-1), sum_c_k/c_k[0])
+    
+    plt.grid()
+    plt.title("IAT plot")
+    plt.show()
 
 def IAT(matrix, lag = 100):
     N = len(matrix[:,0])

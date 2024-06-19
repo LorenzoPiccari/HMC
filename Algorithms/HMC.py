@@ -5,12 +5,13 @@ import numpy as np
 
 class HMC(MC_Algorithm):
             
-        def __init__(self, user_model, Hamiltonian = None, L = 30, dt = 0.001):
-            super().__init__(user_model)
+        def __init__(self, user_model, Hamiltonian = None, L = 30, dt = 0.001, rng = np.random):
+            super().__init__(user_model, rng)
             if Hamiltonian is None:
                 self.Hamiltonian = H(np.ones(self.model.dim))
             else:
                 self.Hamiltonian = Hamiltonian
+            self.rng = rng
             self.L = L
             self.dt = dt
              

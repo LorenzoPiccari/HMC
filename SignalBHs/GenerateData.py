@@ -27,10 +27,6 @@ def generate_data(bounds, Nsources, sampling_frequency=16, sigma_noise=1, rng=np
 
     theta = generate_gpParam(Nsources, bounds, rng)
     
-    linspace_array = np.linspace(0, bounds[1][1], Nsources + 2)
-
-    theta[1::5] = linspace_array[1:-1]
-    
     print("\n Real parameters: \n",)
     for i in range( Nsources):
         print(theta[i*5:(i+1)*5], "\n")
