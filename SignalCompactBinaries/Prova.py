@@ -65,6 +65,7 @@ algs = [ metropolis, mala, hmc,nuts,  mynuts, pb]
 
 #all_m = compare(algs, 21000, start_q,1000, 100)
 all_m = [np.load(a.alg_name()+".npy") for a in algs]
+'''
 for a, m in zip(algs, all_m):
     plt.scatter(real_q[::3], real_q[1::3], color = 'red', marker = 'x')
     l1,l2,l3 = np.percentile(m, [5,50,95], axis = 0)
@@ -76,7 +77,12 @@ for a, m in zip(algs, all_m):
     plt.show()
 for a, m in zip(algs, all_m):
     what_u_get(m, t, signal, noise, Nsources, a.alg_name())
-
-inf= np.load("info.npy")
-
-print(inf)
+'''
+for a, m in zip(algs, all_m):
+    what_u_get(m, t, signal, noise, Nsources, a.alg_name())
+    mean = np.percentile(m,50,axis=0)
+    for i in range(Nsources):
+        sys.corner_plot(m[:,i*3:(i+1)*3], true = real_q[i*3:(i+1)*3])
+    plt.scatter(mean[:][1::3],mean[:][0::3], color = 'blue')
+    plt.scatter(real_q[:][1::3], real_q[:][::3], marker= 'x', color = 'red')
+    plt.show()

@@ -67,12 +67,17 @@ print(rj)
 m, rj = hmc.run(21000, start_q)
 np.save(hmc.alg_name()+".npy", m[1000:,:])
 print(rj)'''
-all_m = compare(algs, 21000, start_q, 1000, 100)
-#all_m = [np.load(a.alg_name()+".npy") for a in algs]
+#all_m = compare(algs, 21000, start_q, 1000, 100)
+all_m = [np.load(a.alg_name()+".npy") for a in algs]
 
-for m, a in zip(all_m, algs):
+for a, m in zip(algs, all_m):
     what_u_get(m, t, signal, noise, Nsources, a.alg_name())
-
+    mean = np.percentile(m,50,axis=0)
+    for i in range(Nsources):
+        sys.corner_plot(m[:,i*5:(i+1)*5], true = real_q[i*5:(i+1)*5])
+    plt.scatter(mean[:][1::5],mean[:][0::5], color = 'blue')
+    plt.scatter(real_q[:][1::5], real_q[:][::5], marker= 'x', color = 'red')
+    plt.show()
 
 inf= np.load("info.npy")
 

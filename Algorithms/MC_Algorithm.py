@@ -25,7 +25,6 @@ class MC_Algorithm():
     def run(self, iteration, start_q = None):
         
             sample, rejected = self.prep_run(start_q, iteration)
-            print("\n start_q: ", sample[-1])
             
             
             for i in tqdm(range(iteration)):
@@ -35,7 +34,20 @@ class MC_Algorithm():
                 rejected+= rj
                 
             
-            print("\n Rejected points: ", rejected)    
+            return sample, rejected
+    
+    def run2(self, iteration, start_q = None):
+        
+            sample, rejected = self.prep_run(start_q, iteration)
+            
+            
+            for i in (range(iteration)):
+                
+                sample[i], rj = self.Kernel(sample[i-1,:])
+                
+                rejected+= rj
+                
+            
             return sample, rejected
     
     def simple_run(self, iteration, start_q):
@@ -45,13 +57,13 @@ class MC_Algorithm():
             rejected = 0
             sample[-1] = start_q
             
-            for i in tqdm(range(iteration)):
+            for i in (range(iteration)):
                 
                 sample[i], rj = self.Kernel(sample[i-1,:])
                 
                 rejected+= rj
             
-            return sample, rejected    
+            return sample    
     
     def new_point(self):
             generate_random_numbers = lambda pair: self.rng.uniform(pair[0], pair[1])

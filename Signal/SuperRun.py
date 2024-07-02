@@ -10,6 +10,10 @@ from Hamiltonian.PB_H import PB_H
 import numpy as np
 import ray
 import matplotlib.pyplot as plt
+import time
+
+
+
 def what_u_get(x, t, signal, noise, Nsources_cb, Nsources_bh, title):
     plt.plot(t, x, color = 'blue', alpha = 0.8, label = "Esteemed")
     plt.plot(t, signal , color = 'red', alpha = 0.8, label = "True signal")
@@ -23,13 +27,21 @@ def what_u_get(x, t, signal, noise, Nsources_cb, Nsources_bh, title):
 def ray_worker(S_run, iteration, preruniteration, burn_in):
     return S_run.run(iteration, preruniteration, burn_in)
     
-def ray_run(S_run, iteration, preruniteration, burn_in, num_process):
-    
+def ray_run(alg, hamilt,name, signal, time, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh, bounds_cb, iteration, preruniteration, burn_in, num_process):
+    S_run = []
+    for i in range(num_process):
+        S_run.append(SuperRun(alg, hamilt, signal, time, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh, bounds_cb, rng = np.random.default_rng((1234)*(i+1))))
+        
     ray.shutdown()
     ray.init()
-    futures = [ray_worker.remote(S_run, iteration, preruniteration, burn_in) for i in range(num_process)]
+    futures = [ray_worker.remote(s, iteration, preruniteration, burn_in) for s in S_run]
     results = [ray.get(f) for f in futures]
     ray.shutdown()
+    for i, r in enumerate(results):
+        np.save(name+str(i)+".npy", r)
+        x = [bursts(S_run[0].model.t, S_run[0].Nsources_cb, S_run[0].Nsources_bh, q) for q in r]
+        q1 = np.percentile(x, 50, axis = 0)
+        what_u_get(q1, S_run[0].model.t, S_run[0].model.sample, S_run[0].model.sigma_noise, S_run[0].Nsources_cb, S_run[0].Nsources_bh, "mid")
         
     return results
 
@@ -38,7 +50,7 @@ class SuperRun:
         self.algorithm = algorithm
         self.hamiltonian = hamiltonian
         self.rng = rng
-        self.model = Signal( sample, time,  Nsources_bh, Nsources_cb, sampling_frequency, sigma_noise,bounds_bh , bounds_cb )
+        self.model = Signal( sample, time,  Nsources_bh, Nsources_cb, sampling_frequency, sigma_noise, bounds_bh , bounds_cb )
         self.Nsources_bh = Nsources_bh
         self.Nsources_cb = Nsources_cb
     
@@ -47,20 +59,18 @@ class SuperRun:
         dt = 0.01
         q = start_q.copy()
         
-        while bad_dt:
-            m, rj = MALA(self.model, dt).simple_run(100, q)
-            print(dt,rj)
+        while bad_dt:   
+            m, rj = MALA(self.model, dt).run2(100, q)
             q = m[-1]
             if rj <= 35:
                 bad_dt = False
-            dt /= 2
+            else:
+                dt /= 2
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-        m, _ = MALA(self.model, dt, rng = self.rng).run(preruniteration, q)
-        x = [bursts(self.model.t, self.Nsources_cb, self.Nsources_bh, q) for q in m]
-        q1 = np.percentile(x, 50, axis = 0)
-        q2 = np.percentile(m, 50, axis=0)
-        what_u_get(q1, self.model.t, self.model.sample, self.model.sigma_noise, self.Nsources_cb, self.Nsources_bh, "mid")
-        what_u_get(bursts(self.model.t, self.Nsources_cb, self.Nsources_bh, q2), self.model.t, self.model.sample, self.model.sigma_noise, self.Nsources_cb, self.Nsources_bh, "mid")
+        m,rj = MALA(self.model, dt, rng = self.rng).run2(preruniteration, q)
+        q2 = np.percentile(m[int(preruniteration/2):,:], 50, axis=0)
+        #what_u_get(q1, self.model.t, self.model.sample, self.model.sigma_noise, self.Nsources_cb, self.Nsources_bh, "mid")
+        #what_u_get(bursts(self.model.t, self.Nsources_cb, self.Nsources_bh, q2), self.model.t, self.model.sample, self.model.sigma_noise, self.Nsources_cb, self.Nsources_bh, "mid")
         
         return q2
         
@@ -73,17 +83,20 @@ class SuperRun:
         
         q = sort_and_reconstruct(q, self.Nsources_cb, self.Nsources_bh)
         
-        what_u_get(bursts(self.model.t, self.Nsources_cb, self.Nsources_bh, q), self.model.t, self.model.sample, self.model.sigma_noise, self.Nsources_cb, self.Nsources_bh, "mid")
-        dt = 0.01
+        #what_u_get(bursts(self.model.t, self.Nsources_cb, self.Nsources_bh, q), self.model.t, self.model.sample, self.model.sigma_noise, self.Nsources_cb, self.Nsources_bh, "mid")
+        dt = 0.000625 
+
         bad_dt = True
         while bad_dt:
             
-            m, rj = self.algorithm(self.model, self.hamiltonian, dt,rng = self.rng).simple_run(100, q)
-            q=m[-1]
+            m, rj = self.algorithm(self.model, self.hamiltonian, dt,rng = self.rng).run2(100, q)
             print(dt,rj)
-            if rj <=25:
+            q=m[-1]
+            if rj <25:
                 bad_dt = False
-            dt /= 2
+            else:
+                dt /= 2
+
         '''
         Mass = 1
         bad_mass = True
@@ -101,8 +114,10 @@ class SuperRun:
         
         hamiltonian = H(Mass*np.eye(len(q)))  
         '''
-        m, rj= self.algorithm(self.model, self.hamiltonian, dt, rng = self.rng).run(iteration, q)
-        return m[burn_in:,:], rj
+        t = time.time()
+        m, rj = self.algorithm(self.model, self.hamiltonian, dt, rng = self.rng).run2(iteration, q)
+        print(time.time()-t)
+        return m[burn_in:,:]
         
 def sort_and_reconstruct(X, N1, N2):
     # Lengths of the vectors

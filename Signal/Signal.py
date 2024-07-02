@@ -45,11 +45,11 @@ def gradient_bursts_cb(q,t, dim, const):
 
 class Signal(Model):
     
-    def __init__(self, sample, time,  Nsources_bh, Nsources_cb, sampling_frequency=16, sigma_noise=0.8,bounds_bh = None, bounds_cb = None):
+    def __init__(self, sample, times,  Nsources_bh, Nsources_cb, sampling_frequency=16, sigma_noise=0.8,bounds_bh = None, bounds_cb = None):
         
         
         self.sample = sample
-        
+        self.times = times
         self.Nsources_bh = Nsources_bh
         self.Nsources_cb = Nsources_cb
         
@@ -58,7 +58,7 @@ class Signal(Model):
         if bounds_bh is None: bounds_bh = [(2. ,7.), (0.,15.), (.1, 1.), (.75, 4.), (0, 2*np.pi)]*Nsources_bh
         
         
-        self.npoints = int(sampling_frequency*(time[1] - time[0]))
+        self.npoints = int(sampling_frequency*(times[1] - times[0]))
         self.t =  np.array([i/sampling_frequency for i in range(self.npoints)])
         self.sigma_noise = sigma_noise 
         super().__init__(5*Nsources_bh + 3*Nsources_cb ,bounds_cb + bounds_bh)

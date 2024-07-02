@@ -11,7 +11,7 @@ from Algorithms.MALA import MALA
 from Hamiltonian.H import H
 from Hamiltonian.PB_H import PB_H
 from Compare import compare
-
+import time
 from SuperRun import SuperRun, ray_run
 
 def what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, title):
@@ -25,25 +25,29 @@ def what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, title):
     plt.legend()
     plt.show()
     
-    
-time = (0., 30.)  
-sigma_noise =.8
+num_process = 2
+iteration = 5000
+burn_in = 1
+prerun = 10000
+times = (0., 50.)  
+sigma_noise =.5
 rng = np.random.default_rng(1234)
 Nsources_cb = 10
-bounds_cb  = [(1. ,4.), (.5, 3.), (0, 2*np.pi)] 
+bounds_cb  = [(1. ,4.), (1.5, 2.5), (0, 2*np.pi)] 
 
-Nsources_bh = 10
-bounds_bh = [(3. ,7.), time, (.1, 1.), (.75, 4.), (0, 2*np.pi)]
+Nsources_bh = 20
+bounds_bh = [(3. ,7.), times, (.5, 1.), (4., 6.), (0, 2*np.pi)]
 
 
-sampling_freq = 100
+sampling_freq = 50
+
 
 t, signal, real_q, noise = generate_data( bounds_cb, bounds_bh, Nsources_cb, Nsources_bh, sampling_frequency=sampling_freq, sigma_noise=sigma_noise, rng = rng)
 
 plt.plot(t, signal )
 plt.show()
 
-M = Signal( signal, time,  Nsources_bh, Nsources_cb, sampling_frequency = sampling_freq, sigma_noise= sigma_noise, bounds_cb = bounds_cb*Nsources_cb, bounds_bh = bounds_bh*Nsources_bh)
+M = Signal( signal, times,  Nsources_bh, Nsources_cb, sampling_frequency = sampling_freq, sigma_noise= sigma_noise, bounds_cb = bounds_cb*Nsources_cb, bounds_bh = bounds_bh*Nsources_bh)
 
 def sort_and_reconstruct(X, N1, N2):
     # Lengths of the vectors
@@ -81,9 +85,36 @@ start_q = metropolis.new_point()
 algs = [metropolis, mala, hmc, nuts, mynuts, pb]
 
 
-S_run = SuperRun(MyNUTS, H1, signal, time, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb)
+S_runMynuts = SuperRun(MyNUTS, H1, signal, times, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb)
+S_runnuts = SuperRun(NUTS, H1, signal, times, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb)
+S_runpb = SuperRun(MyNUTS, H2, signal, times, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb)
 
 '''
+m = S_runMynuts.run(iteration, prerun, burn_in)
+what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+np.save(mynuts.alg_name()+".npy", m)
+mean = np.percentile(m,50,axis=0)
+print(real_q)
+for i in range(Nsources_cb):
+    sys.corner_plot(m[:,i*3:(i+1)*3], true = real_q[i*3:(i+1)*3])
+plt.scatter(mean[:Nsources_cb*3][1::3],mean[:Nsources_cb*3][0::3], color = 'blue')
+plt.scatter(real_q[:Nsources_cb*3][1::3], real_q[:Nsources_cb*3][::3], marker= 'x', color = 'red')
+plt.show()
+for i in range(Nsources_bh):
+    sys.corner_plot(m[ :,Nsources_cb*3+ i*5:Nsources_cb*3+(i+1)*5], true = real_q[i*5:(i+1)*5])    
+plt.scatter(mean[Nsources_cb*3:][1::5],mean[Nsources_cb*3:][::5], color = 'blue')
+plt.scatter(real_q[Nsources_cb*3:][1::5], real_q[Nsources_cb*3:][::5], marker= 'x', color = 'red')
+plt.show()'''
+'''
+m = S_runnuts.run(iteration, prerun, burn_in)
+what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+np.save(nuts.alg_name()+".npy", m)
+
+m = S_runpb.run(iteration, prerun, burn_in)
+what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+np.save(pb.alg_name()+".npy", m)
+
+
 m, rj = mala.run(5000, sort_and_reconstruct(start_q, Nsources_cb, Nsources_bh))
 mean = np.mean(m, axis = 0)
 p = np.percentile(m, 50, axis = 0)
@@ -94,15 +125,47 @@ what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
 #all_m = compare(algs, 21000, start_q, 1000, 100)
 #all_m = [np.load(a.alg_name()+".npy") for a in algs]
 '''
-m , rj= S_run.run(10000,50000,5000)    
+'''
+m = S_run.run(100, 50000, 0)
+what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+
+
+
+ti=time.time()
+m = ray_run(MyNUTS, H1,mynuts.alg_name(), signal, times, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb, iteration, prerun, burn_in, num_process)  
+print(time.time()-ti)
+
+for i in range (num_process):
+    m = np.load(mynuts.alg_name()+str(i)+".npy")
+
+    what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+''' 
+ti=time.time()
+m = ray_run(NUTS, H1,nuts.alg_name(), signal, times, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb, iteration, prerun, burn_in, num_process)  
+print(time.time()-ti)
+for i in range (num_process-1):
+    m = np.load(nuts.alg_name()+str(i)+".npy")
+    what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+''' 
+ti=time.time()
+m = ray_run(MyNUTS, H2,pb.alg_name(), signal, times, Nsources_bh, Nsources_cb, sampling_freq, sigma_noise, bounds_bh*Nsources_bh, bounds_cb*Nsources_cb, iteration, prerun, burn_in, num_process)  
+print(time.time()-ti)
+for i in range (num_process-1):
+    m = np.load(pb.alg_name()+str(i)+".npy")
+    what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+
 #m, rj = mala.run(50000, start_q)
+
 '''
 mean = np.mean(m, axis = 0)
 p = np.percentile(m, 50, axis = 0)
 plt.plot(t, bursts(t, Nsources_cb, Nsources_bh, mean) , color = 'green', alpha = 0.8, label = "True signal")
 plt.plot(t, bursts(t, Nsources_cb, Nsources_bh, p) , color = 'orange', alpha = 0.8, label = "True signal")
 '''
-what_u_get(m, t, signal, noise, Nsources_cb, Nsources_bh, "bp")
+
+
+'''
+    
 mean = np.percentile(m,50,axis=0)
 print(real_q)
 for i in range(Nsources_cb):

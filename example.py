@@ -64,7 +64,7 @@ dim = 2
 M = Rosenbrock(dim)
 Mass = np.array([[1,.0], [.0,1]])
 #H1 = H(np.ones(dim)*0.01)
-H1 = H(Mass*0.001)
+H1 = H(Mass)
 def mass_matrix(dim, rng):
     return .0005*np.ones(dim)
     
@@ -82,5 +82,6 @@ hmc = HMC(M, H1, L = 40, dt = 0.01, rng = rng)
 algs = [metropolis, mala, hmc, nuts, mynuts, pb]
 iteration = 10000
 
-m, rj = mynuts.run(iteration, start_q)
+m, rj = nuts.run(iteration, start_q)
+print(rj)
 sys.corner_plot(m)

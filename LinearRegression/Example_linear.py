@@ -56,21 +56,21 @@ start_q[:-2] = sample_x.copy()
 start_q[-2:] = np.array([45.,30.])
 
 def mass_matrix(dim, rng):
-    return np.ones(dim)
-H1 = H(np.eye(num_points+2))
-H2 = PB_H(mass_matrix, 10000)
+    return 5*np.ones(dim)
+H1 = H(5*np.eye(num_points+2))
+H2 = PB_H(mass_matrix)
 
 
-nuts =  NUTS(M, H1, dt = 0.01 , rng=rng)
-mynuts = MyNUTS(M, H1, dt = 0.01, rng=rng)
-pb = MyNUTS(M, H2, dt = 0.01, rng=rng)
+nuts =  NUTS(M, H1, dt = 0.05 , rng=rng)
+mynuts = MyNUTS(M, H1, dt = 0.05, rng=rng)
+pb = MyNUTS(M, H2, dt = 0.05, rng=rng)
 metropolis = metropolis(M, .1, rng = rng)
 mala = MALA(M, dt = 0.001, rng=rng)
-hmc = HMC(M, H1, L = 50, dt = 0.01 , rng = rng)
+hmc = HMC(M, H1, L = 50, dt = 0.05 , rng = rng)
 
 a = mynuts
 
-algs = [ metropolis,mala,hmc,nuts, mynuts, pb]
+algs = [hmc,nuts, mynuts, pb]
 iteration = 15000
 all_m = compare(algs, iteration, start_q, 5000,20)
 all_m = [np.load(a.alg_name()+".npy") for a in algs]
@@ -83,6 +83,6 @@ for a, m in zip(algs, all_m):
     print(a.alg_name(), np.mean(m[:,-2]), sys.var_mean_real(m, np.mean(m, axis = 0))[0][-2])
     print(a.alg_name(), np.mean(m[:,-1]), sys.var_mean_real(m, np.mean(m, axis = 0))[0][-1])
 for a, m in zip(algs, all_m):
-    print(np.load("info.npy"))
+    print(np.load("info"+a.alg_name()+".npy"))
     plot_retta(sample_x, sample_y, x, y, coef, interc, m, a.alg_name())
 plt.show()

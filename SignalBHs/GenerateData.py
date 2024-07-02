@@ -26,11 +26,13 @@ def generate_gpParam(Nsources, bounds, rng):
 def generate_data(bounds, Nsources, sampling_frequency=16, sigma_noise=1, rng=np.random):
 
     theta = generate_gpParam(Nsources, bounds, rng)
-    
+    linspace_array = np.linspace(0, bounds[1][1], Nsources + 2)
+
+    theta[1::5] = linspace_array[1:-1]
     print("\n Real parameters: \n",)
     for i in range( Nsources):
         print(theta[i*5:(i+1)*5], "\n")
-
+    
     npoints = int(sampling_frequency*(bounds[1][1] - bounds[1][0]))
 
     t = np.array([i/sampling_frequency for i in range(npoints)]) # questo dovrebbe generarlo con la frequenza di sampling corretta invece che leggermente alterata, prova a controllore

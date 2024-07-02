@@ -49,9 +49,9 @@ class BHsSignal(Model):
             return np.inf
 
         signal = bursts(self.t, self.Nsources, q)
-        res = self.sample - signal
+        res = (self.sample - signal) / self.sigma_noise
         
-        return (res @ res *.5/(self.sigma_noise**2))
+        return .5  * (res @ res)
         
         
     def gradient(self, q):
@@ -60,9 +60,10 @@ class BHsSignal(Model):
         res = self.sample - signal
         const = res/(self.sigma_noise**2)
         
-        return (-gradient_bursts(q, self.t, self.Nsources, const))
+        return (-gradient_bursts(q, self.t, self.Nsources, const)) / self.npoints
     
     def reflection(self, q, p):
+
         diff = np.diff(q[1::5])
         refl = []
         
@@ -73,7 +74,7 @@ class BHsSignal(Model):
         for f in refl:
             p[f[0]] = -p[f[0]]
             p[f[1]] = -p[f[1]]
-            
+
         for i in range(self.Nsources):
             if q[5 * i + 4] < 0:
                 q[5 * i + 4] += 2*np.pi
